@@ -67,7 +67,7 @@ function walkView(): string {
   const percent = Math.round((countedTotal() / state.items.length) * 100);
   return `<section class="workbench">
     <div class="work-top"><div><p class="eyebrow">Shelf walk in progress</p><h1>Count stock</h1></div><div class="progress-copy"><b>${countedTotal()} / ${state.items.length}</b><span>${percent}% counted</span></div></div>
-    <div class="progress" aria-label="${percent}% counted"><span style="width:${percent}%"></span></div>
+    <div class="progress" role="progressbar" aria-label="Count progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div>
     <div class="find-row"><div class="field"><label for="item-search">Scan barcode or find an item</label><input id="item-search" type="search" value="${esc(query)}" placeholder="Barcode, SKU, name or shelf path" autocomplete="off"></div><button class="button scan" data-action="scan"><span aria-hidden="true">⌗</span> Scan barcode</button></div>
     ${matches.length ? `<div class="search-results" role="listbox" aria-label="Matching items">${matches.map((i) => `<button role="option" data-select="${esc(i.id)}"><span><b>${esc(i.sku)}</b> ${esc(i.name || 'Unnamed item')}</span><small>${esc(i.location)}</small></button>`).join('')}</div>` : query ? `<p class="empty-inline">No item matches “${esc(query)}”. Try the SKU or full shelf path.</p>` : ''}
     <article class="count-sheet">

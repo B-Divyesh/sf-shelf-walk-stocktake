@@ -38,6 +38,9 @@ test('count and legal pages pass the accessibility smoke check', async ({ page }
   await page.locator('#csv-file').setInputFiles({ name: 'shelf.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
   const countResults = await new AxeBuilder({ page }).withTags(['wcag2a','wcag2aa']).analyze();
   expect(countResults.violations.filter((v) => ['serious','critical'].includes(v.impact ?? ''))).toEqual([]);
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  const darkResults = await new AxeBuilder({ page }).withTags(['wcag2a','wcag2aa']).analyze();
+  expect(darkResults.violations.filter((v) => ['serious','critical'].includes(v.impact ?? ''))).toEqual([]);
   await page.goto('/privacy/');
   const legalResults = await new AxeBuilder({ page }).withTags(['wcag2a','wcag2aa']).analyze();
   expect(legalResults.violations.filter((v) => ['serious','critical'].includes(v.impact ?? ''))).toEqual([]);
