@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "Shelf Walk Stocktake",
+  "short_name": "Shelf Walk",
+  "description": "Offline, shelf-ordered physical inventory counts and defensible variance exports.",
+  "start_url": "/?v=1",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#E7E5DD",
+  "theme_color": "#E7E5DD",
+  "icons": [
+    {"src":"/icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"/icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
