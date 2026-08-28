@@ -1,0 +1,8 @@
+{
+  "generator": "Azure AI Foundry factory image deployment via /opt/fleet/lib/gen-image.sh",
+  "generated": "2026-08-28",
+  "size": "1536x1024",
+  "quality": "medium",
+  "prompt": "Wide editorial still for an offline warehouse stock-counting tool. Empty compact wholesale storeroom, frontal view down one low aisle, brutalist poured-concrete walls and floor, dark steel shelving, paper shelf labels, rugged unbranded handheld barcode scanner resting on a crate, and moss and lichen green plastic bins as sparse accents. Natural overcast loading-bay light, tactile dust and paper, restrained documentary composition, 35mm lens, room on the left for interface copy. Palette: pale concrete, carbon black, moss green, lichen. No people, no legible text, no numbers, no logos, no watermark, no futuristic screens, no glossy showroom, no dramatic neon.",
+  "review": "Accepted: no people, logos or readable text; scanner geometry and shelf structure are plausible; no visible seams or misleading UI."
+}
