@@ -60,10 +60,13 @@ built app.
 
 ## Deployment
 
-The work-order deployment mechanism is the static `main` branch build. Push the
-repair commit to `origin/main`; the factory static deployment should publish the
-fresh `dist/` output. No deployment credentials or direct static-host command
-are stored in this repository.
+Repair commit `d703667362abe89b01bd0adadd4e492ee12936a3` was pushed to
+`origin/main` on 2026-08-28. The work-order deployment mechanism is the static
+`main` branch build; no deployment credentials or direct static-host command are
+stored in this repository. An immediate live check still returned the previous
+deployment (`/demo/` had the ordinary landing title, `/robots.txt` was 404, and
+`/missing-route` was 200), so the factory publication had not propagated during
+this repair window.
 
 ## Known gaps / next step
 
