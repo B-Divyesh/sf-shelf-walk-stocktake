@@ -1,76 +1,48 @@
-# Shelf Walk Stocktake — build handoff
+# Shelf Walk Stocktake — verification handoff: FAIL
 
-Work order: `shelf-walk-stocktake-build-1`
-Completed: 2026-08-28
+Verification work order: `shelf-walk-stocktake-verify-1`<br>
+Candidate: `caf79e653a46e72b32b7a4f3d9d2f6c3c44725c6`<br>
+Live URL: <https://shelf-walk-stocktake.sociobot.in><br>
+Verified: 2026-08-28
 
-## What was built
+## Status
 
-- A Vite + vanilla TypeScript offline PWA for the complete shelf-count workflow:
-  safe CSV import, natural shelf-path order, full-path display, search, camera or
-  manual barcode entry, duplicate-barcode location choice, count/variance
-  reasons, notes, compressed local photo notes, review filters, variance-only CSV,
-  audit CSV, and full JSON backup/restore.
-- IndexedDB persistence for the current session and paid checkpoints. All count
-  data stays on-device. The service worker precaches the generated Vite shell,
-  provides cache-first assets and a navigation fallback, claims clients, and
-  exposes the app's offline state.
-- One-time Pro license flow through the Sociobot contract: hosted buy link,
-  return-token capture, local token storage, no-more-than-daily verification,
-  offline cached verdict, paste-to-restore, invalid/revoked handling, and a useful
-  free tier. Pro adds counter attribution and up to five restorable checkpoints;
-  core counting, photo notes, safety, backups and both exports remain free.
-- Dedicated `/privacy/` and `/terms/` pages, app manifest, 192/512 maskable icons,
-  empty/error/offline states, reduced motion, light/dark treatments, keyboard and
-  390px mobile layouts.
-- A product-specific “brutalist concrete and moss” system recorded in
-  `.factory/design.md`. The original hero was generated with the factory Azure
-  image command, visually reviewed, recorded with prompt/provenance, and shipped
-  as a 70 KB WebP.
+**FAIL — do not promote this candidate.** A normal stock shortage exports its
+numeric variance as the literal text `'-2`, rather than numeric `-2`. This is a P1
+failure of the brief’s import-ready variance artifact: the consumer must clean up
+negative adjustments before import.
 
-## Verification
+See [verification-1.md](verification-1.md) for full, reproducible evidence and all
+observations.
 
-Run from the repository root:
+## What was verified
+
+- Clean clone at the candidate SHA, `npm ci`, `npm test` (4/4), exact
+  `npm run build`, and `npm run test:e2e` (4/4) all passed.
+- The complete live `dist/` artifact set SHA-256 matches this candidate.
+- Desktop and 390 px mobile normal count, shelf-order search, invalid CSV/recovery,
+  maximum rows, barcode fallback, keyboard focus, dark/reduced motion, axe,
+  privacy/network scope, offline reload, and update notification were exercised.
+- No console/page errors or axe serious/critical findings were observed.
+
+## Other issues to resolve
+
+- **P2:** live responses lack `Content-Security-Policy` and `Permissions-Policy`.
+- **Advisory:** one Lighthouse 12.8.2 mobile run measured Performance 87 (target
+  is 90), despite LCP 1.3 s, CLS 0.019, and Accessibility 100. Re-measure after
+  addressing the export bug; responsive hero variants and immutable hashed-asset
+  caching are also advisable.
+
+## How to reproduce
 
 ```sh
-npm install
+npm ci
 npm test
 npm run build
 npm run test:e2e
 ```
 
-Results on 2026-08-28:
+In the app, import a row with expected `12`, record counted `10` with a variance
+reason, then export Variance CSV. The `variance` column will be `'-2`.
 
-- `npm test`: 4/4 Vitest tests passed (quoted CSV, header aliases/natural sort,
-  malformed/duplicate input rejection, variance selection, formula neutralising,
-  audit output).
-- `npm run build`: passed; `dist/index.html` produced. Initial app JavaScript is
-  25.8 KB raw / 9.6 KB gzip; CSS is 15.4 KB raw / 4.1 KB gzip; hero is 70 KB.
-- `npm run test:e2e`: 4/4 mobile Chromium tests passed. Covered import → count →
-  variance → review → export readiness, light and dark/reduced-motion Axe checks,
-  privacy page, and a real `context.setOffline(true)` reload.
-- `/opt/fleet/lib/verify-url.sh`: passed with title, `lang=en`, exactly one `h1`,
-  a main landmark, no missing image alt, no unnamed button and no console errors.
-- Lighthouse 12.8.2 mobile: Performance 100, Accessibility 100, Best Practices
-  100, SEO 92. LCP 1.8 s, FCP 1.0 s, TBT 0 ms, CLS 0.019, transfer 88 KiB.
-  Lighthouse lab mode did not emit INP; TBT was used as the interaction proxy.
-- Generated hero 70 KB, below the 300 KB budget. No fonts are shipped. JS and
-  CSS are far below the 200 KB / 50 KB limits.
-
-## Known gaps and next steps
-
-- Automatic camera decoding depends on the browser's `BarcodeDetector` support
-  and HTTPS camera permission. Unsupported browsers receive an in-context manual
-  barcode field; this is intentional rather than a bundled decoder dependency.
-- The checkout/verify routes are implemented for the product slug, but the
-  factory must register and price the production product before paid checkout can
-  succeed. Non-production hosts use the pilot API; the named production host uses
-  the live API. No product ID or payment-provider secret is hardcoded.
-- The 300-SKU / 95% intended-location success measure needs a real operator pilot;
-  automated tests cover duplicate barcode disambiguation logic and full paths,
-  not warehouse scan conditions.
-- Browser storage is finite and optional photos can consume it. Images are capped,
-  resized to 960 px and compressed, but operators should export a JSON backup for
-  long-term retention.
-
-No infrastructure, DNS, billing registration, analytics or external runtime
-assets were added.
+No product code was changed by the verifier.
