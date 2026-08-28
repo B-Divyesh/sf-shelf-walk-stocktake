@@ -63,7 +63,8 @@ Results on 2026-08-28:
   barcode field; this is intentional rather than a bundled decoder dependency.
 - The checkout/verify routes are implemented for the product slug, but the
   factory must register and price the production product before paid checkout can
-  succeed. No product ID or payment-provider secret is hardcoded.
+  succeed. Non-production hosts use the pilot API; the named production host uses
+  the live API. No product ID or payment-provider secret is hardcoded.
 - The 300-SKU / 95% intended-location success measure needs a real operator pilot;
   automated tests cover duplicate barcode disambiguation logic and full paths,
   not warehouse scan conditions.

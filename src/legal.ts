@@ -6,7 +6,7 @@ const content = isPrivacy ? `
   <p class="lede">Your shelf list, counts, notes and photos stay in this browser’s local storage. Shelf Walk Stocktake has no analytics, advertising trackers or account system.</p>
   <h2>What stays on your device</h2><p>Imported item data, stock counts, reason codes, notes, optional photos, audit events and paid-unlock preferences are stored in IndexedDB or localStorage. They leave only when you export or share a file.</p>
   <h2>Camera and photos</h2><p>Camera access begins only after you choose “Scan barcode”. Photo notes are optional and stored locally. Your browser controls permission; you can revoke it in site settings. Avoid photographing people, access codes or unrelated confidential material.</p>
-  <h2>License checks</h2><p>If you add a Pro license, the token is sent to Sociobot’s billing API at api.sociobot.in no more than once daily to check whether it remains valid. Payment is handled on a hosted page by Sociobot/Dodo, the merchant of record; this app never receives card details.</p>
+  <h2>License checks</h2><p>If you add a Pro license, the token is sent to Sociobot’s billing API no more than once daily to check whether it remains valid. Payment is handled on a hosted page by Sociobot/Dodo, the merchant of record; this app never receives card details.</p>
   <h2>Your control</h2><p>Use Backup data to keep a portable copy. “Erase this stocktake” removes active count data from this browser. Removing site data in browser settings clears everything, including the stored license token.</p>
   <p class="muted">Effective 28 August 2026. Questions: support@sociobot.in</p>` : `
   <p class="eyebrow">Plain terms for a practical tool</p><h1>Terms</h1>

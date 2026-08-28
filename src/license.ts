@@ -1,4 +1,7 @@
 const SLUG = 'shelf-walk-stocktake';
+const API_BASE = location.hostname === 'shelf-walk-stocktake.sociobot.in'
+  ? 'https://api.sociobot.in'
+  : 'https://pilot-api.sociobot.in';
 const TOKEN_KEY = `sb_license:${SLUG}`;
 const VERDICT_KEY = `${TOKEN_KEY}:verdict`;
 const DAY = 86_400_000;
@@ -35,7 +38,7 @@ export async function checkLicense(force = false): Promise<LicenseState> {
   const cached = JSON.parse(localStorage.getItem(VERDICT_KEY) ?? 'null') as { valid: boolean; at: number; reason?: string } | null;
   if (!force && cached && Date.now() - cached.at < DAY) return { unlocked: cached.valid, checking: false, reason: cached.reason };
   try {
-    const response = await fetch(`https://api.sociobot.in/api/v1/products/${SLUG}/verify?license=${encodeURIComponent(token)}`);
+    const response = await fetch(`${API_BASE}/api/v1/products/${SLUG}/verify?license=${encodeURIComponent(token)}`);
     if (!response.ok) throw new Error('verify unavailable');
     const result = await response.json() as { valid: boolean; reason?: string };
     localStorage.setItem(VERDICT_KEY, JSON.stringify({ valid: result.valid, reason: result.reason, at: Date.now() }));
@@ -46,4 +49,4 @@ export async function checkLicense(force = false): Promise<LicenseState> {
   }
 }
 
-export const checkoutUrl = `https://api.sociobot.in/api/v1/products/${SLUG}/checkout`;
+export const checkoutUrl = `${API_BASE}/api/v1/products/${SLUG}/checkout`;
