@@ -56,18 +56,24 @@ export function importItems(input: string): Item[] {
   return items.sort((a, b) => a.location.localeCompare(b.location, undefined, { numeric: true }) || a.sku.localeCompare(b.sku, undefined, { numeric: true }));
 }
 
-const safe = (value: unknown) => {
+export type CsvValue = string | number | null | undefined;
+
+const safe = (value: CsvValue) => {
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw new Error('CSV numeric values must be finite.');
+    return String(value);
+  }
   let text = String(value ?? '');
   if (/^[=+\-@]/.test(text)) text = `'${text}`;
   return `"${text.replaceAll('"', '""')}"`;
 };
 
-export function toCsv(rows: unknown[][]): string {
+export function toCsv(rows: CsvValue[][]): string {
   return `${rows.map((row) => row.map(safe).join(',')).join('\r\n')}\r\n`;
 }
 
 export function varianceCsv(state: StocktakeState): string {
-  const rows: unknown[][] = [['sku','name','barcode','location','expected','counted','variance','reason','note','counted_at']];
+  const rows: CsvValue[][] = [['sku','name','barcode','location','expected','counted','variance','reason','note','counted_at']];
   for (const item of state.items) {
     const count = state.counts[item.id];
     if (count && count.counted !== item.expected) rows.push([item.sku,item.name,item.barcode,item.location,item.expected,count.counted,count.counted-item.expected,count.reason,count.note,count.updatedAt]);
@@ -76,7 +82,7 @@ export function varianceCsv(state: StocktakeState): string {
 }
 
 export function auditCsv(state: StocktakeState): string {
-  const rows: unknown[][] = [['timestamp','session_id','counter','action','sku','location','detail']];
+  const rows: CsvValue[][] = [['timestamp','session_id','counter','action','sku','location','detail']];
   for (const event of state.audit) {
     const item = state.items.find((i) => i.id === event.itemId);
     rows.push([event.at,state.sessionId,event.counter ?? state.counter,event.action,item?.sku ?? '',item?.location ?? '',event.detail]);

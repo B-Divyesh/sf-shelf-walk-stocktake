@@ -1,11 +1,16 @@
-const VERSION='shelf-walk-v1';
+const VERSION='shelf-walk-v2';
 const SHELL=['/offline.html','/manifest.webmanifest','/assets/shelf-walk-hero.webp','/icons/icon-192.png','/icons/icon-512.png'];
-async function cachePage(cache,path){
-  const response=await fetch(path);const text=await response.text();await cache.put(path,new Response(text,{headers:response.headers,status:response.status,statusText:response.statusText}));
-  const assets=[...text.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((match)=>match[1]);
-  await Promise.all([...new Set(assets)].map((asset)=>cache.add(asset)));
+async function cacheAsset(cache,path){
+  const response=await fetch(new Request(path,{cache:'reload'}));
+  if(!response.ok)throw new Error(`Could not cache ${path}: ${response.status}`);
+  await cache.put(path,response);
 }
-self.addEventListener('install',(event)=>{event.waitUntil(caches.open(VERSION).then(async(cache)=>{await cache.addAll(SHELL);await Promise.all(['/','/privacy/','/terms/'].map((path)=>cachePage(cache,path)));}).then(()=>self.skipWaiting()));});
+async function cachePage(cache,path){
+  const response=await fetch(new Request(path,{cache:'reload'}));const text=await response.text();await cache.put(path,new Response(text,{headers:response.headers,status:response.status,statusText:response.statusText}));
+  const assets=[...text.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((match)=>match[1]);
+  await Promise.all([...new Set(assets)].map((asset)=>cacheAsset(cache,asset)));
+}
+self.addEventListener('install',(event)=>{event.waitUntil(caches.open(VERSION).then(async(cache)=>{await Promise.all(SHELL.map((asset)=>cacheAsset(cache,asset)));await Promise.all(['/','/privacy/','/terms/'].map((path)=>cachePage(cache,path)));}).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',(event)=>{event.waitUntil(caches.keys().then((keys)=>Promise.all(keys.filter((key)=>key!==VERSION).map((key)=>caches.delete(key)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',(event)=>{
   if(event.request.method!=='GET')return;
@@ -14,5 +19,5 @@ self.addEventListener('fetch',(event)=>{
   if(event.request.mode==='navigate'){
     event.respondWith(fetch(event.request).then((response)=>{const copy=response.clone();caches.open(VERSION).then((cache)=>cache.put(event.request,copy));return response;}).catch(async()=>await caches.match(event.request)||await caches.match('/')||await caches.match('/offline.html')));return;
   }
-  event.respondWith(caches.match(event.request).then((cached)=>cached||fetch(event.request).then((response)=>{if(response.ok){const copy=response.clone();caches.open(VERSION).then((cache)=>cache.put(event.request,copy));}return response;})));
+  event.respondWith(caches.match(event.request,{ignoreVary:true}).then((cached)=>cached||fetch(event.request).then((response)=>{if(response.ok){const copy=response.clone();caches.open(VERSION).then((cache)=>cache.put(event.request,copy));}return response;})));
 });

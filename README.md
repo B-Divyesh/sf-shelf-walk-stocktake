@@ -16,6 +16,7 @@ Live: <https://shelf-walk-stocktake.sociobot.in>
 - IndexedDB persistence across refresh, tab close and installed-app use.
 - Local, compressed photo notes; reason codes required for a variance.
 - CSV injection-safe variance and audit exports, and complete JSON backup/restore.
+- Numeric expected, counted and variance fields remain numeric in exports, including shortages.
 - Installable app shell with an explicitly tested offline reload.
 - Free core workflow. The optional ₹799 one-time Pro license adds a named counter to audit events and five on-device restorable checkpoints.
 
@@ -46,6 +47,7 @@ Requires Node.js 20+.
 npm install
 npm run dev
 npm test
+npm run typecheck
 npm run build
 npm run test:e2e
 ```
@@ -56,8 +58,9 @@ exercise a 390px-class mobile flow, Axe accessibility checks and offline reload.
 
 ## Deploy
 
-Deploy the contents of `dist/` as a static site with clean-directory fallbacks
-for `/privacy/` and `/terms/`. Do not configure infrastructure, secrets or a
+Deploy the contents of `dist/` as an Azure Static Web App. The shipped
+`staticwebapp.config.json` supplies clean-directory fallback, CSP,
+Permissions-Policy and the PWA manifest MIME type. Do not add secrets or a
 payment provider in this repository. Checkout and token verification use the
 hosted Sociobot API for the product slug `shelf-walk-stocktake`; the factory
 registers that product separately.
