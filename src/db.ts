@@ -20,7 +20,12 @@ export async function saveSnapshot(state: StocktakeState): Promise<void> {
   const db = await openDb();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(SNAPSHOTS, 'readwrite');
-    tx.objectStore(SNAPSHOTS).put({ savedAt: new Date().toISOString(), state });
+    const store = tx.objectStore(SNAPSHOTS);
+    const put = store.put({ savedAt: new Date().toISOString(), state });
+    put.onsuccess = () => {
+      const keys = store.getAllKeys();
+      keys.onsuccess = () => (keys.result as string[]).sort().slice(0, -5).forEach((key) => store.delete(key));
+    };
     tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
   }).finally(() => db.close());
 }
