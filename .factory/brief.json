@@ -1,0 +1,12 @@
+{
+  "slug": "shelf-walk-stocktake",
+  "title": "Shelf Walk Stocktake",
+  "territory": "utilities",
+  "user": "A single-location wholesaler, workshop, or retailer doing a physical stock count who needs a fast barcode-assisted walk in shelf order and a defensible variance file without deploying an ERP.",
+  "smallest_useful_product": "Offline mobile PWA: import item/location CSV, show full shelf path, scan or search an item, record count/reason/photo note, and export only variances plus an audit CSV. Non-goals: POS, purchasing, valuation, multi-warehouse sync, or ERP integration.",
+  "success_measure": "In a pilot count of 300 SKUs, 95% of scans are assigned to the intended full location and the variance file is ready for import without manual location cleanup.",
+  "artifact_class": "pwa-offline",
+  "monetization": "one-time",
+  "constraints": "Barcode camera access requires clear permission; local photo notes may expose stock/site data; CSV formats must be documented and untrusted imports safely parsed.",
+  "state": "RESEARCHED"
+}
