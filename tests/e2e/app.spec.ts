@@ -103,3 +103,10 @@ test('reopens the cached app offline', async ({ page, context }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Walk the shelf');
   expect(errors).toEqual([]);
 });
+
+test('announces an installed service-worker update', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => navigator.serviceWorker?.controller !== null, undefined, { timeout: 15_000 });
+  await page.evaluate(async () => { await navigator.serviceWorker.register('/sw.js?update=probe'); });
+  await expect(page.getByRole('status')).toContainText('An update is ready. Reload to use it.');
+});
