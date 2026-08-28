@@ -44,7 +44,7 @@ Results on 2026-08-28:
   malformed/duplicate input rejection, variance selection, formula neutralising,
   audit output).
 - `npm run build`: passed; `dist/index.html` produced. Initial app JavaScript is
-  25.6 KB raw / 9.5 KB gzip; CSS is 15.4 KB raw / 4.1 KB gzip; hero is 70 KB.
+  25.8 KB raw / 9.6 KB gzip; CSS is 15.4 KB raw / 4.1 KB gzip; hero is 70 KB.
 - `npm run test:e2e`: 4/4 mobile Chromium tests passed. Covered import → count →
   variance → review → export readiness, light and dark/reduced-motion Axe checks,
   privacy page, and a real `context.setOffline(true)` reload.
