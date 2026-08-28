@@ -24,4 +24,9 @@ describe('static deployment response policy', () => {
   it('serves the PWA manifest with its registered content type', () => {
     expect(config.mimeTypes?.['.webmanifest']).toBe('application/manifest+json');
   });
+
+  it('keeps versioned build assets cacheable for a year', () => {
+    const route = config.routes?.find((candidate) => candidate.route === '/assets/*');
+    expect(route?.headers?.['Cache-Control']).toBe('public, max-age=31536000, immutable');
+  });
 });

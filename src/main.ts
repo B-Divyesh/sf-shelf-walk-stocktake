@@ -36,7 +36,7 @@ function shell(content: string): string {
     <button data-mode="review" class="${mode === 'review' ? 'active' : ''}"><b>02</b> Review</button>
     <button data-mode="more" class="${mode === 'more' ? 'active' : ''}"><b>03</b> Finish</button>
   </nav>` : ''}
-  <main id="main">${content}</main>
+  <main id="main" tabindex="-1">${content}</main>
   <footer class="site-footer"><span>Built for basements and back aisles.</span><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Original AI-generated scene.</span></footer>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>`;
 }
@@ -45,7 +45,7 @@ function startView(): string {
   return `<section class="hero">
     <div class="hero-copy"><p class="eyebrow">Offline stock count · no ERP required</p><h1>Walk the shelf.<br><em>Trust the variance.</em></h1>
       <p class="lede">Import the list you already have, count in full shelf-path order, and leave with clean variance and audit files.</p>
-      <div class="import-panel"><label class="file-button" for="csv-file">Import shelf-list CSV</label><input id="csv-file" type="file" accept=".csv,text/csv" class="visually-hidden">
+      <div class="import-panel"><label class="file-button file-picker"><span>Import shelf-list CSV</span><input id="csv-file" type="file" accept=".csv,text/csv"></label>
         <button class="button secondary" data-action="template">Download CSV template</button>
         <p class="field-help">Required: <code>sku, location, expected</code>. Optional: <code>name, barcode</code>. Max 10,000 rows / 2 MB.</p>
         <p id="import-error" class="error" role="alert"></p>
@@ -149,7 +149,18 @@ async function scanCamera(): Promise<void> {
   scannerReturnFocus=document.activeElement as HTMLElement;
   const supported = 'BarcodeDetector' in window;
   const dialog = document.createElement('div'); dialog.id='scan-dialog'; dialog.className='dialog-backdrop';
-  dialog.innerHTML = `<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="scan-title"><button class="dialog-close" data-action="close-scan" aria-label="Close scanner">×</button><p class="eyebrow">Camera permission required</p><h2 id="scan-title">Scan a barcode</h2><p>${supported ? 'Your camera frames stay on this device and are not uploaded.' : 'Automatic camera scanning is unavailable in this browser. Enter the barcode below.'}</p>${supported ? '<video id="scan-video" playsinline muted aria-label="Live barcode camera view"></video><p id="scan-status" role="status">Point the camera at one barcode.</p>' : ''}<form id="manual-scan"><label for="barcode-entry">Barcode</label><input id="barcode-entry" inputmode="numeric" autocomplete="off"><button class="button primary">Find item</button></form></div>`;
+  dialog.innerHTML = `<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="scan-title"><button class="dialog-close" data-action="close-scan" aria-label="Close scanner">×</button><p class="eyebrow">Camera permission required</p><h2 id="scan-title">Scan a barcode</h2><p>${supported ? 'Your camera frames stay on this device and are not uploaded. You can also enter a barcode manually.' : 'Automatic camera scanning is unavailable in this browser. Enter the barcode below.'}</p>${supported ? '<video id="scan-video" playsinline muted aria-label="Live barcode camera view"></video><p id="scan-status" role="status">Point the camera at one barcode.</p>' : ''}<form id="manual-scan"><label for="barcode-entry">Barcode</label><input id="barcode-entry" inputmode="numeric" autocomplete="off"><button class="button primary">Find item</button></form></div>`;
+  dialog.addEventListener('click', (event) => {
+    if ((event.target as HTMLElement).closest<HTMLElement>('[data-action="close-scan"]')) stopCamera();
+  });
+  dialog.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    if (form.id !== 'manual-scan') return;
+    const code = (form.querySelector('#barcode-entry') as HTMLInputElement).value;
+    stopCamera();
+    findBarcode(code);
+  });
   document.body.append(dialog); (dialog.querySelector('.dialog-close') as HTMLButtonElement).focus();
   if (!supported) return;
   try {
@@ -209,8 +220,18 @@ app.addEventListener('submit', async (event) => {
     const prior=state.counts[item.id]; state.counts[item.id]={itemId:item.id,counted:qty,reason,note:String(data.get('note')??'').trim(),photo:prior?.photo??pendingPhotos[item.id],updatedAt:new Date().toISOString()}; delete pendingPhotos[item.id]; addAudit(prior?'recount':'count',`Expected ${item.expected}; counted ${qty}${reason?`; reason: ${reason}`:''}`,item.id);
     const idx=state.items.findIndex((i)=>i.id===item.id); activeId=state.items.slice(idx+1).find((i)=>!state.counts[i.id])?.id ?? state.items.find((i)=>!state.counts[i.id])?.id ?? item.id; await persist('Count saved. Moving to the next shelf.'); render('counted');
   }
-  if(form.id==='manual-scan') { const code=(form.querySelector('#barcode-entry') as HTMLInputElement).value; stopCamera(); findBarcode(code); }
   if(form.id==='license-form') { const token=(form.querySelector('#license-token') as HTMLInputElement).value; try { restoreLicense(token); license={unlocked:false,checking:true}; render(); license=await checkLicense(true); if(license.unlocked){snapshots=await listSnapshots();toast('Pro unlocked on this device.');} render(); } catch(e){toast(e instanceof Error?e.message:'Could not verify license.');} }
+});
+
+document.addEventListener('click', (event) => {
+  const skip = (event.target as HTMLElement).closest<HTMLAnchorElement>('a.skip-link');
+  if (!skip) return;
+  const target = document.querySelector<HTMLElement>(skip.hash);
+  if (!target) return;
+  event.preventDefault();
+  history.replaceState({}, '', skip.hash);
+  target.focus();
+  target.scrollIntoView();
 });
 
 document.addEventListener('keydown',(event)=>{

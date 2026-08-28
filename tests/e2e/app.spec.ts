@@ -82,6 +82,60 @@ test('scanner fallback is keyboard-contained, restores focus, and respects reduc
   await expect(scan).toHaveCSS('transition-duration', '0s');
 });
 
+test('manual scanner controls find a barcode and close without navigating', async ({ page }) => {
+  await page.addInitScript(() => { delete (window as Window & { BarcodeDetector?: unknown }).BarcodeDetector; });
+  await page.goto('/');
+  await page.locator('#csv-file').setInputFiles({ name: 'shelf.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+
+  const scan = page.getByRole('button', { name: 'Scan barcode' });
+  await scan.click();
+  const dialog = page.getByRole('dialog', { name: 'Scan a barcode' });
+  await dialog.getByRole('textbox', { name: 'Barcode', exact: true }).fill('8903333333333');
+  await dialog.getByRole('button', { name: 'Find item' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('.location-stamp')).toContainText('Aisle 10 / Bay 4 / Shelf C');
+
+  await scan.click();
+  await page.getByRole('button', { name: 'Close scanner' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(scan).toBeFocused();
+});
+
+test('manual scanner remains usable when camera permission is denied', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'BarcodeDetector', { configurable: true, value: class {} });
+    Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+      configurable: true,
+      value: () => Promise.reject(new DOMException('Denied', 'NotAllowedError'))
+    });
+  });
+  await page.goto('/');
+  await page.locator('#csv-file').setInputFiles({ name: 'shelf.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await page.getByRole('button', { name: 'Scan barcode' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Scan a barcode' });
+  await expect(dialog.getByRole('status')).toContainText('Camera access was blocked or unavailable');
+  await dialog.getByRole('textbox', { name: 'Barcode', exact: true }).fill('8902222222222');
+  await dialog.getByRole('button', { name: 'Find item' }).click();
+  await expect(page.locator('.location-stamp')).toContainText('Aisle 2 / Bay 1 / Shelf B');
+});
+
+test('keyboard import focus is visible, skip focus reaches main, and mobile links meet target size', async ({ page }) => {
+  await page.goto('/');
+  const picker = page.locator('.file-picker');
+  await page.locator('#csv-file').focus();
+  await expect(picker).toHaveCSS('outline-width', '3px');
+  await page.getByRole('link', { name: 'Skip to stocktake' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('main')).toBeFocused();
+
+  for (const link of [page.locator('.brand'), page.locator('.site-footer a').first(), page.locator('.site-footer a').nth(1)]) {
+    const box = await link.boundingBox();
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+  }
+});
+
 test('reopens the cached app offline', async ({ page, context }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));

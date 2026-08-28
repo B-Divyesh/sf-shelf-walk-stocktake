@@ -19,5 +19,16 @@ const content = isPrivacy ? `
 
 document.querySelector<HTMLDivElement>('#legal')!.innerHTML = `
   <header class="site-header"><a class="brand" href="/" aria-label="Shelf Walk Stocktake home"><span class="brand-mark" aria-hidden="true">//</span> Shelf Walk</a></header>
-  <main id="main" class="legal-page">${content}<p><a class="text-link" href="/">← Return to stocktake</a></p></main>
+  <main id="main" tabindex="-1" class="legal-page">${content}<p><a class="text-link" href="/">← Return to stocktake</a></p></main>
   <footer class="site-footer"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>© 2026 Sociobot</span></footer>`;
+
+document.addEventListener('click', (event) => {
+  const skip = (event.target as HTMLElement).closest<HTMLAnchorElement>('a.skip-link');
+  if (!skip) return;
+  const target = document.querySelector<HTMLElement>(skip.hash);
+  if (!target) return;
+  event.preventDefault();
+  history.replaceState({}, '', skip.hash);
+  target.focus();
+  target.scrollIntoView();
+});
