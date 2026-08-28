@@ -55,12 +55,19 @@ npm run test:e2e
 The exact production build command is `npm run build`. Output lands in `dist/`
 with `dist/index.html` at its root. End-to-end tests use Playwright 1.58.2 and
 exercise a 390px-class mobile flow, Axe accessibility checks and offline reload.
+To run the same suite against a deployed environment without starting a local
+preview server, set `E2E_BASE_URL`, for example:
+
+```sh
+E2E_BASE_URL=https://shelf-walk-stocktake.sociobot.in npm run test:e2e
+```
 
 ## Deploy
 
 Deploy the contents of `dist/` as an Azure Static Web App. The shipped
 `staticwebapp.config.json` supplies clean-directory fallback, CSP,
-Permissions-Policy and the PWA manifest MIME type. Do not add secrets or a
+Permissions-Policy, PWA manifest MIME type, and immutable one-year caching for
+hashed build assets. Do not add secrets or a
 payment provider in this repository. Checkout and token verification use the
 hosted Sociobot API for the product slug `shelf-walk-stocktake`; the factory
 registers that product separately.
