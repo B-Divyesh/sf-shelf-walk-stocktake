@@ -1,0 +1,44 @@
+[
+  {
+    "id": "demo-sandbox",
+    "claim": "Try the six-item sample count without saving to your real stocktake",
+    "where": "landing action, /demo banner, README",
+    "test": "npm run test:claim -- --grep @claim:demo-sandbox",
+    "sandbox": "fresh browser context at /demo/; assert sample items, reset control, and demo:shelf-walk-stocktake with no production database"
+  },
+  {
+    "id": "shelf-order",
+    "claim": "Counts sample items in natural full shelf-path order",
+    "where": "README",
+    "test": "npm run test:claim -- --grep @claim:shelf-order",
+    "sandbox": "fresh browser context at /demo/; save the first count and assert the next full shelf path"
+  },
+  {
+    "id": "csv-export",
+    "claim": "Exports variance and audit CSV files",
+    "where": "finish screen, README",
+    "test": "npm run test:claim -- --grep @claim:csv-export",
+    "sandbox": "fresh browser context at /demo/; create a shortage and assert downloaded variance values and audit header"
+  },
+  {
+    "id": "offline-reload",
+    "claim": "Works offline after the first visit",
+    "where": "README, terms",
+    "test": "npm run test:claim -- --grep @claim:offline-reload",
+    "sandbox": "fresh browser context at /demo/; wait for service-worker control, set offline, reload, and assert the sample count"
+  },
+  {
+    "id": "privacy-local",
+    "claim": "Keeps stocktake data in this browser with no analytics or cloud inventory storage",
+    "where": "privacy page, README",
+    "test": "npm run test:claim -- --grep @claim:privacy-local",
+    "sandbox": "fresh browser context at /demo/; save a count, capture requests, and assert only same-origin requests plus demo IndexedDB storage"
+  },
+  {
+    "id": "manual-barcode",
+    "claim": "Finds an item by typing its barcode when camera scanning is unavailable",
+    "where": "README",
+    "test": "npm run test:claim -- --grep @claim:manual-barcode",
+    "sandbox": "fresh browser context at /demo/ with BarcodeDetector absent; enter a bundled barcode and assert its shelf path"
+  }
+]

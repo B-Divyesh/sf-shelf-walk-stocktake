@@ -1,8 +1,8 @@
 import './styles.css';
-import { loadState, saveSnapshot, saveState, listSnapshots } from './db';
+import { clearActiveStorage, loadState, saveState, useDemoStorage } from './db';
 import { emptyState, type Item, type StocktakeState } from './model';
 import { auditCsv, importItems, toCsv, varianceCsv } from './csv';
-import { captureLicense, checkLicense, checkoutUrl, restoreLicense, storedToken, type LicenseState } from './license';
+import { sampleItems } from './sample';
 
 type Mode = 'start' | 'walk' | 'review' | 'more';
 let state: StocktakeState = emptyState();
@@ -10,14 +10,12 @@ let mode: Mode = 'start';
 let activeId = '';
 let query = '';
 let reviewFilter: 'all' | 'variance' | 'uncounted' = 'all';
-let license: LicenseState = { unlocked: false, checking: true };
-let snapshots: Array<{ savedAt: string; state: StocktakeState }> = [];
 let deferredInstall: Event | null = null;
 let cameraStream: MediaStream | null = null;
 let scannerReturnFocus: HTMLElement | null = null;
 const pendingPhotos: Record<string, string> = {};
 const app = document.querySelector<HTMLDivElement>('#app')!;
-const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+const demoMode = location.pathname === '/demo' || location.pathname.startsWith('/demo/') || new URL(location.href).searchParams.get('demo') === '1';
 
 const esc = (value: unknown) => String(value ?? '').replace(/[&<>'"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]!));
 const current = () => state.items.find((item) => item.id === activeId) ?? state.items.find((item) => !state.counts[item.id]) ?? state.items[0];
@@ -27,9 +25,9 @@ const addAudit = (action: string, detail: string, itemId?: string) => state.audi
 
 function shell(content: string): string {
   const online = navigator.onLine;
-  return `<header class="site-header">
+  return `${demoMode ? `<aside class="demo-banner" aria-label="Demo controls"><span><b>Demo</b> — sample data, nothing is saved to your real stocktake.</span><span><button class="text-button" data-action="reset-demo">Reset demo</button><button class="text-button" data-action="start-real">Start for real</button></span></aside>` : ''}<header class="site-header">
     <a class="brand" href="/" data-action="home" aria-label="Shelf Walk Stocktake home"><span class="brand-mark" aria-hidden="true">//</span> Shelf Walk</a>
-    <div class="header-status"><span class="status-dot ${online ? '' : 'offline'}" aria-hidden="true"></span>${online ? 'Local save on' : 'Offline · local save on'}</div>
+    <nav class="header-nav" aria-label="Site"><a href="/demo/">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav><div class="header-status"><span class="status-dot ${online ? '' : 'offline'}" aria-hidden="true"></span>${online ? 'Local save on' : 'Offline · local save on'}</div>
   </header>
   ${state.items.length ? `<nav class="step-rail" aria-label="Stocktake steps">
     <button data-mode="walk" class="${mode === 'walk' ? 'active' : ''}"><b>01</b> Walk</button>
@@ -37,16 +35,17 @@ function shell(content: string): string {
     <button data-mode="more" class="${mode === 'more' ? 'active' : ''}"><b>03</b> Finish</button>
   </nav>` : ''}
   <main id="main" tabindex="-1">${content}</main>
-  <footer class="site-footer"><span>Built for basements and back aisles.</span><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Original AI-generated scene.</span></footer>
+  <footer class="site-footer"><span>Built for basements and back aisles.</span><a href="/demo/">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory · v1.0.1</span></footer>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>`;
 }
 
 function startView(): string {
   return `<section class="hero">
-    <div class="hero-copy"><p class="eyebrow">Offline stock count · no ERP required</p><h1>Walk the shelf.<br><em>Trust the variance.</em></h1>
-      <p class="lede">Import the list you already have, count in full shelf-path order, and leave with clean variance and audit files.</p>
+    <div class="hero-copy"><p class="eyebrow">Offline stock count · no ERP required</p><h1>Count stock in one <em>local stockroom.</em></h1>
+      <p class="lede">For wholesalers, workshops, and retailers who need a shelf-ordered count without an ERP.</p>
       <div class="import-panel"><label class="file-button file-picker"><span>Import shelf-list CSV</span><input id="csv-file" type="file" accept=".csv,text/csv"></label>
-        <button class="button secondary" data-action="template">Download CSV template</button>
+        <a class="button accent" href="/demo/">Try it with sample data</a><button class="button secondary" data-action="template">Download CSV template</button>
+        <p class="try-help">Try the six-item hardware shelf count first, or import your own CSV.</p>
         <p class="field-help">Required: <code>sku, location, expected</code>. Optional: <code>name, barcode</code>. Max 10,000 rows / 2 MB.</p>
         <p id="import-error" class="error" role="alert"></p>
       </div>
@@ -99,9 +98,6 @@ function reviewView(): string {
 function moreView(): string {
   return `<section class="finish-page"><p class="eyebrow">Own the result</p><h1>Export &amp; hand off</h1><p class="lede">Files are created on this device. Spreadsheet-formula characters are neutralised on export.</p>
     <div class="export-grid"><div><span class="stamp">CSV</span><h2>Variance file</h2><p>Only counted items that differ from expected stock.</p><button class="button primary" data-action="export-variance">Export ${varianceTotal()} variances</button></div><div><span class="stamp">CSV</span><h2>Audit trail</h2><p>Timestamped import and count events, including full paths.</p><button class="button primary" data-action="export-audit">Export audit trail</button></div><div><span class="stamp">JSON</span><h2>Local backup</h2><p>A portable copy of this full stocktake, including photo notes.</p><button class="button secondary" data-action="backup">Backup data</button></div></div>
-    <section class="pro-panel" aria-labelledby="pro-title"><div><p class="eyebrow">Optional permanent upgrade</p><h2 id="pro-title">Pro checkpoint pack</h2><p>₹799 once. Add a named counter to audit rows and save up to five restorable checkpoints on this device. Counting, photos and both CSV exports stay free.</p></div>
-      ${license.unlocked ? `<div class="license-active"><b>Pro unlocked</b><label for="counter">Counter name on new audit rows</label><input id="counter" value="${esc(state.counter)}" maxlength="80"><button class="button secondary" data-action="snapshot">Save checkpoint</button>${snapshots.length ? `<div class="snapshots"><span>Recent checkpoints</span>${snapshots.map((s,i)=>`<button data-snapshot="${i}">${fmt.format(new Date(s.savedAt))} · ${s.state.items.length} items</button>`).join('')}</div>` : ''}</div>` : `<div class="license-buy"><a class="button accent" href="${checkoutUrl}">Buy Pro — ₹799 once</a><details><summary>Have a license? Restore it</summary><form id="license-form"><label for="license-token">License token</label><input id="license-token" autocomplete="off" value="${esc(storedToken())}"><button class="button secondary">Verify &amp; unlock</button><p class="field-help">${license.reason === 'offline' ? 'Connect once to verify this license.' : license.reason ? 'License no longer active. Check the token or buy a new license.' : 'Paste the token from your receipt.'}</p></form></details></div>`}
-    </section>
     <details class="danger-zone"><summary>Erase this stocktake</summary><p>Removes the current import, counts, notes and audit events from this device. Download a backup first if you may need them.</p><button class="button danger-button" data-action="erase">Erase current stocktake</button></details>
   </section>`;
 }
@@ -185,9 +181,10 @@ app.addEventListener('click', async (event) => {
   if (el.dataset.mode) { mode=el.dataset.mode as Mode; query=''; render(); return; }
   if (el.dataset.select) { activeId=el.dataset.select; query=''; mode='walk'; render('counted'); return; }
   if (el.dataset.filter) { reviewFilter=el.dataset.filter as typeof reviewFilter; render(); return; }
-  if (el.dataset.snapshot) { if(!confirm('Restore this checkpoint? Your current active count will be replaced.')) return; state=structuredClone(snapshots[Number(el.dataset.snapshot)].state); await persist('Checkpoint restored.'); mode='walk'; render(); return; }
   const action=el.dataset.action;
   if(action==='home') { event.preventDefault(); mode=state.items.length?'walk':'start'; render(); }
+  if(action==='reset-demo'&&demoMode) { await clearActiveStorage(); state=emptyState(); state.items=sampleItems(); addAudit('demo-reset','Reset the bundled sample shelf count'); activeId=state.items[0].id; mode='walk'; await persist('Demo reset with six sample items.'); render('counted'); }
+  if(action==='start-real'&&demoMode) { await clearActiveStorage(); location.assign('/'); return; }
   if(action==='template') download('shelf-walk-template.csv',toCsv([['sku','name','barcode','location','expected'],['SKU-001','Example item','8901234567890','Aisle 01 / Bay 02 / Shelf B',12]]),'text/csv');
   if(action==='minus'||action==='plus') { const input=document.querySelector<HTMLInputElement>('#counted')!; const value=Number(input.value)||0; input.value=String(Math.max(0,value+(action==='plus'?1:-1))); input.focus(); }
   if(action==='scan') scanCamera();
@@ -196,14 +193,12 @@ app.addEventListener('click', async (event) => {
   if(action==='export-variance') { download(`variances-${state.sessionId.slice(0,8)}.csv`,varianceCsv(state),'text/csv'); addAudit('export','Exported variance CSV'); await persist('Variance file downloaded.'); }
   if(action==='export-audit') { addAudit('export','Exported audit CSV'); await persist(); download(`audit-${state.sessionId.slice(0,8)}.csv`,auditCsv(state),'text/csv'); toast('Audit trail downloaded.'); }
   if(action==='backup') download(`shelf-walk-backup-${state.sessionId.slice(0,8)}.json`,JSON.stringify(state,null,2),'application/json');
-  if(action==='snapshot'&&license.unlocked) { await saveSnapshot(structuredClone(state)); snapshots=await listSnapshots(); render(); toast('Checkpoint saved on this device.'); }
   if(action==='erase') { if(!confirm(`Erase this ${state.items.length}-item stocktake and all of its counts from this device?`)) return; state=emptyState(); await persist(); mode='start'; activeId=''; render(); }
 });
 
 app.addEventListener('input', async (event) => {
   const target=event.target as HTMLInputElement;
   if(target.id==='item-search') { query=target.value; render('item-search'); const input=document.querySelector<HTMLInputElement>('#item-search'); input?.setSelectionRange(query.length,query.length); }
-  if(target.id==='counter'&&license.unlocked) { state.counter=target.value; await persist(); }
 });
 
 app.addEventListener('change', async (event) => {
@@ -220,7 +215,6 @@ app.addEventListener('submit', async (event) => {
     const prior=state.counts[item.id]; state.counts[item.id]={itemId:item.id,counted:qty,reason,note:String(data.get('note')??'').trim(),photo:prior?.photo??pendingPhotos[item.id],updatedAt:new Date().toISOString()}; delete pendingPhotos[item.id]; addAudit(prior?'recount':'count',`Expected ${item.expected}; counted ${qty}${reason?`; reason: ${reason}`:''}`,item.id);
     const idx=state.items.findIndex((i)=>i.id===item.id); activeId=state.items.slice(idx+1).find((i)=>!state.counts[i.id])?.id ?? state.items.find((i)=>!state.counts[i.id])?.id ?? item.id; await persist('Count saved. Moving to the next shelf.'); render('counted');
   }
-  if(form.id==='license-form') { const token=(form.querySelector('#license-token') as HTMLInputElement).value; try { restoreLicense(token); license={unlocked:false,checking:true}; render(); license=await checkLicense(true); if(license.unlocked){snapshots=await listSnapshots();toast('Pro unlocked on this device.');} render(); } catch(e){toast(e instanceof Error?e.message:'Could not verify license.');} }
 });
 
 document.addEventListener('click', (event) => {
@@ -249,12 +243,12 @@ async function registerServiceWorker(): Promise<void> {
 }
 
 async function init(): Promise<void> {
-  captureLicense();
+  useDemoStorage(demoMode);
+  document.title = demoMode ? 'Demo — Shelf Walk Stocktake' : 'Shelf Walk Stocktake — offline inventory counting';
   try { state=(await loadState())??emptyState(); } catch { state=emptyState(); }
+  if (demoMode && state.items.length === 0) { state.items=sampleItems(); addAudit('demo-start','Loaded six bundled sample shelf items'); await persist(); }
   if(state.items.length) { mode='walk'; activeId=state.items.find((i)=>!state.counts[i.id])?.id??state.items[0].id; }
   render();
-  license=await checkLicense(); if(license.unlocked) snapshots=await listSnapshots();
-  if(mode==='more') render();
   registerServiceWorker().catch(()=>{});
 }
 init();

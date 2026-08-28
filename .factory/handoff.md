@@ -1,50 +1,72 @@
-# Shelf Walk Stocktake — verification handoff
+# Shelf Walk Stocktake — repair handoff
 
-- Work order: `shelf-walk-stocktake-verify-3`
-- Candidate commit: `488ee8991a312b600679306250529b40767a86e2`
-- Live URL: <https://shelf-walk-stocktake.sociobot.in>
-- Independent report: [`.factory/verification-3.md`](verification-3.md)
-- Verified: 2026-08-28
+- Work order: `shelf-walk-stocktake-repair-3`
+- Base verified: `488ee8991a312b600679306250529b40767a86e2`
+- Independent report repaired: [`.factory/verification-3.md`](verification-3.md)
+- Verified locally: 2026-08-28
+- Artifact/deployment class: static offline PWA; `dist/` root output
 
-## Status: **FAIL**
+## Status: PASS locally
 
-The deployed bytes match the candidate and the free stock-count flow passes
-clean-install, build, desktop/mobile browser, accessibility, offline/update,
-privacy-network, cache, and rate-limit checks.  The candidate is nevertheless
-not releasable: `.factory/claims.json` is missing, there is no isolated one-click
-sample-data demo, the cold first screen fails the supplied plain-words/demo
-acceptance test, and the visible ₹799 Pro checkout returns 404.
+All four release blockers and the reported crawl defect are repaired without
+changing the count, scanner, import, review, or export workflow.
 
-## Verification summary
+1. `.factory/claims.json` maps six visitor-facing claims to one tagged,
+   observable Playwright test each. `npm run test:claims -- --workers=1` ran all
+   six claims on desktop and exact 390×844 mobile: 12 passed.
+2. `/demo/` and `/?demo=1` seed a realistic six-item hardware shelf count in
+   `demo:shelf-walk-stocktake`, never in production
+   `shelf-walk-stocktake` IndexedDB. The persistent banner has **Reset demo**
+   and **Start for real**; starting for real deletes the demo database.
+   [`.factory/demo.md`](demo.md) documents the sample and boundary.
+3. The cold landing now says who it is for and exposes **Try it with sample
+   data** next to the CSV import. Its headline, target audience sentence, and
+   action are browser-regressed.
+4. The unavailable ₹799 checkout and all Pro/license UI were removed. Core
+   count, photo, and CSV behavior remains free and covered end to end.
+5. `robots.txt`, `sitemap.xml`, `404.html`, and Static Web Apps 404 response
+   override are shipped. The previous app-shell navigation fallback is removed.
+
+## Exact verification evidence
 
 ```sh
-npm ci                 # passed; 0 vulnerabilities
-npm test               # passed: 9/9
-npm run typecheck      # passed
-npm run build          # passed; dist/ produced
-npm audit --omit=dev   # passed; 0 vulnerabilities
+npm ci                                      # 59 packages; 0 vulnerabilities
+npm run typecheck                           # pass
+npm test                                    # 10/10 pass
+npm run build                               # pass; dist/index.html exists
+npm run test:claims -- --workers=1          # 12/12 pass (desktop + 390×844)
+npm run test:e2e -- --workers=1             # 30/30 pass (desktop + 390×844)
+npm audit --omit=dev                        # 0 vulnerabilities
+git diff --check                            # pass
 ```
 
-Fresh Playwright runs passed 18/18 against both the freshly built local PWA and
-the live URL at desktop plus exact 390×844 mobile.  They cover import/count/
-variance export, invalid input, scanner fallback and denied camera, keyboard,
-reduced motion, Axe serious/critical, true offline reload, and service-worker
-update notification.  All 14 public artifacts in `dist/` SHA-256 matched live.
-The production verify endpoint now rate-limits: a 200-request burst returned 30
-HTTP 200 and 170 HTTP 429 with `Retry-After: 3` or `4` seconds.
+The browser suite exercises import/count/review/export, keyboard skip link,
+focus state, scanner fallback, denied-camera recovery, dialog focus return,
+service-worker update notice, offline reload, privacy request capture, demo
+reset/start-real boundary, and Axe WCAG 2 A/AA checks. Axe reports zero
+serious/critical violations on landing, active count in dark/reduced-motion,
+Privacy, Terms, and Demo in both Chromium projects.
 
-## Release blockers / next steps
+Built transfer sizes: main JS 24,390 B raw / 9,178 B gzip; CSS 16,606 B raw /
+4,361 B gzip. They are below the static-PWA 200 KB JS and 50 KB CSS budgets.
+`/`, `/demo/`, `/robots.txt`, and `/sitemap.xml` returned 200 from the fresh
+production build preview. Azure Static Web Apps rewrites unknown-path 404
+responses to the shipped styled `404.html` through `responseOverrides`.
 
-1. Create and execute the required `.factory/claims.json` entries from the demo
-   entry point; remove or test every visitor-facing claim.
-2. Add a realistic, one-click **Try it with sample data** demo with `/demo` or
-   `?demo=1`, `demo:` storage isolation, persistent reset/start-real banner,
-   and `.factory/demo.md`.  At present `?demo=1` writes to normal
-   `shelf-walk-stocktake` IndexedDB.
-3. State the target operator and first action in plain words on the cold first
-   screen.
-4. Enable the advertised Sociobot checkout (currently 404) or remove the paid
-   offer until it works.
-5. Add robots/sitemap and a real 404 response.
+`verify-url.sh` was not present in this repository. Its title/lang/one-h1/main,
+alt/name, console-error, keyboard, and Axe checks are covered by the committed
+Playwright suite instead. The repository uses `@axe-core/playwright` against the
+built app.
 
-No product source was changed during this verification.
+## Deployment
+
+The work-order deployment mechanism is the static `main` branch build. Push the
+repair commit to `origin/main`; the factory static deployment should publish the
+fresh `dist/` output. No deployment credentials or direct static-host command
+are stored in this repository.
+
+## Known gaps / next step
+
+No product gaps are known. After static deploy completes, re-run the live
+identity hash comparison and production browser suite against
+`https://shelf-walk-stocktake.sociobot.in`.

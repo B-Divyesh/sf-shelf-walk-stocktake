@@ -9,7 +9,9 @@
     "build": "npm run typecheck && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:claim": "npm run build && playwright test",
+    "test:claims": "npm run test:claim -- --grep @claim:"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",

@@ -1,28 +1,28 @@
 # Shelf Walk Stocktake
 
-Shelf Walk is a local-first PWA for a single-location wholesaler, workshop or
-retailer doing a physical stock count. It imports a plain item/location CSV,
-keeps the full shelf path visible, supports barcode camera scan or keyboard
-search, records counts/reasons/photo notes, and exports a variance-only file plus
-a timestamped audit trail. It is a count pass, not an ERP, POS or valuation tool.
+Shelf Walk is a local-first PWA for a single-location wholesaler, workshop, or
+retailer doing a physical stock count. Start with the bundled sample or import a
+plain item/location CSV. It is a count pass, not an ERP, POS, or valuation tool.
 
 Live: <https://shelf-walk-stocktake.sociobot.in>
 
-## What works
+## Try the sample
 
-- Natural shelf-path ordering, including numeric segments such as Aisle 2 before Aisle 10.
-- Camera barcode detection where the browser supports `BarcodeDetector`, with a manual barcode field everywhere else.
-- Explicit location choice when the same barcode occurs on multiple shelves.
-- IndexedDB persistence across refresh, tab close and installed-app use.
-- Local, compressed photo notes; reason codes required for a variance.
-- CSV injection-safe variance and audit exports, and complete JSON backup/restore.
-- Numeric expected, counted and variance fields remain numeric in exports, including shortages.
-- Installable app shell with an explicitly tested offline reload.
-- Free core workflow. The optional ₹799 one-time Pro license adds a named counter to audit events and five on-device restorable checkpoints.
+Open [the demo](https://shelf-walk-stocktake.sociobot.in/demo/) for a six-item
+hardware shelf count. It is separate from real work and can be reset at any
+time. See [`.factory/demo.md`](.factory/demo.md) for its storage boundary.
 
-No analytics, runtime CDNs, third-party fonts or cloud inventory storage are used.
-The only external request is a daily Sociobot license verification when a user
-has entered a Pro token.
+## Verified product claims
+
+- Counts sample items in natural full shelf-path order.
+- Exports variance and audit CSV files.
+- Works offline after the first visit.
+- Keeps stocktake data in this browser with no analytics or cloud inventory storage.
+- Finds an item by typing its barcode when camera scanning is unavailable.
+
+Each claim is mapped to an isolated browser regression in
+[`.factory/claims.json`](.factory/claims.json). Run all claim checks with
+`npm run test:claims`.
 
 ## CSV format
 
@@ -33,18 +33,16 @@ sku,name,barcode,location,expected
 SKU-001,Hex nuts,8901234567890,Aisle 01 / Bay 02 / Shelf B,12
 ```
 
-`sku`, `location` and a non-negative numeric `expected` value are required.
-`name` and `barcode` are optional. A SKU may appear at multiple locations, but a
-SKU/location pair must be unique. Common headings such as `item code`, `EAN`,
-`shelf path` and `system count` are recognised. A template is downloadable from
-the empty state.
+`sku`, `location`, and a non-negative numeric `expected` value are required.
+`name` and `barcode` are optional. Download the template from the import screen
+if your headings differ.
 
 ## Develop and verify
 
 Requires Node.js 20+.
 
 ```sh
-npm install
+npm ci
 npm run dev
 npm test
 npm run typecheck
@@ -65,18 +63,13 @@ E2E_BASE_URL=https://shelf-walk-stocktake.sociobot.in npm run test:e2e
 ## Deploy
 
 Deploy the contents of `dist/` as an Azure Static Web App. The shipped
-`staticwebapp.config.json` supplies clean-directory fallback, CSP,
-Permissions-Policy, PWA manifest MIME type, and immutable one-year caching for
-hashed build assets. Do not add secrets or a
-payment provider in this repository. Checkout and token verification use the
-hosted Sociobot API for the product slug `shelf-walk-stocktake`; the factory
-registers that product separately.
+`staticwebapp.config.json` supplies CSP, Permissions-Policy, a PWA manifest MIME
+type, a styled 404 response, and immutable one-year caching for hashed assets.
+Do not add secrets or a payment provider in this repository.
 
 ## Data and safety
 
-Count data is kept in the browser's IndexedDB. Clearing site data removes it, so
-operators should download the audit CSV and a JSON backup before closing out a
-count. Camera permission is requested only after choosing “Scan barcode”. See
+Count data is kept in browser IndexedDB. Clearing site data removes it. See
 [Privacy](https://shelf-walk-stocktake.sociobot.in/privacy/) and
 [Terms](https://shelf-walk-stocktake.sociobot.in/terms/).
 

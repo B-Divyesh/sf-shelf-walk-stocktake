@@ -29,4 +29,10 @@ describe('static deployment response policy', () => {
     const route = config.routes?.find((candidate) => candidate.route === '/assets/*');
     expect(route?.headers?.['Cache-Control']).toBe('public, max-age=31536000, immutable');
   });
+
+  it('ships crawl files and configures an actual 404 response instead of an app-shell fallback', () => {
+    expect((config as { navigationFallback?: unknown }).navigationFallback).toBeUndefined();
+    expect(config.responseOverrides?.['404']?.rewrite).toBe('/404.html');
+  });
+
 });

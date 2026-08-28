@@ -1,18 +1,37 @@
 import type { StocktakeState } from './model';
 
-const DB = 'shelf-walk-stocktake';
+const REAL_DB = 'shelf-walk-stocktake';
+const DEMO_DB = 'demo:shelf-walk-stocktake';
 const STORE = 'local-data';
 const SNAPSHOTS = 'snapshots';
+let databaseName = REAL_DB;
+
+/** Select storage before the app reads or writes any stocktake data. */
+export function useDemoStorage(isDemo: boolean): void {
+  databaseName = isDemo ? DEMO_DB : REAL_DB;
+}
+
+export function activeDatabaseName(): string { return databaseName; }
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB, 2);
+    const request = indexedDB.open(databaseName, 2);
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE);
       if (!request.result.objectStoreNames.contains(SNAPSHOTS)) request.result.createObjectStore(SNAPSHOTS, { keyPath: 'savedAt' });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
+  });
+}
+
+export async function clearActiveStorage(): Promise<void> {
+  const name = databaseName;
+  return new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(name);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => resolve();
   });
 }
 

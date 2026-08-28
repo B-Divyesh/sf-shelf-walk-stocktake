@@ -3,7 +3,7 @@
   "name": "Shelf Walk Stocktake",
   "short_name": "Shelf Walk",
   "description": "Offline, shelf-ordered physical inventory counts and defensible variance exports.",
-  "start_url": "/?v=2",
+  "start_url": "/?v=3",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
