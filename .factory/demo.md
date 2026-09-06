@@ -9,6 +9,10 @@ database. The persistent banner offers **Reset demo**, which reseeds the bundled
 sample, and **Start for real**, which deletes the demo database before returning
 to the import screen.
 
+Choose **Import a CSV in demo** to test an import without leaving this storage
+namespace. It keeps the existing sample until a valid CSV replaces it. Use
+**Return to sample** or **Reset demo** to show the bundled count again.
+
 The bundled sample contains nuts, washers, tape, gloves, cable ties, and cleaner
 across six realistic aisle/bay/shelf paths. It is included in the app bundle, so
 the demo remains available after the first visit when offline.

@@ -1,0 +1,1 @@
+Count shelf stock offline and export variance CSVs from one local stockroom.

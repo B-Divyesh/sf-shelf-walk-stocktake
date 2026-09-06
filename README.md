@@ -19,6 +19,7 @@ time. See [`.factory/demo.md`](.factory/demo.md) for its storage boundary.
 - Works offline after the first visit.
 - Keeps stocktake data in this browser with no analytics or cloud inventory storage.
 - Finds an item by typing its barcode when camera scanning is unavailable.
+- Imports CSV files with up to 10,000 item rows and 2 MB.
 
 Each claim is mapped to an isolated browser regression in
 [`.factory/claims.json`](.factory/claims.json). Run all claim checks with

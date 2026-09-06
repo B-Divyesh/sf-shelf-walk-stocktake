@@ -8,6 +8,22 @@ N-001,Hex nuts,8901111111111,Aisle 2 / Bay 1 / Shelf A,12
 B-010,Box tape,8902222222222,Aisle 2 / Bay 1 / Shelf B,6
 W-100,Washers,8903333333333,Aisle 10 / Bay 4 / Shelf C,20`;
 
+function importCsv(rowCount: number, targetBytes?: number): string {
+  const header = 'sku,name,barcode,location,expected';
+  const rows = Array.from({ length: rowCount }, (_, index) => {
+    const sequence = String(index + 1).padStart(5, '0');
+    return `CAP-${sequence},,89000000${sequence},Aisle 01 / Bay 01 / Shelf ${String((index % 26) + 1).padStart(2, '0')},1`;
+  });
+  const unpadded = [header, ...rows].join('\n');
+  if (!targetBytes) return unpadded;
+
+  const padding = targetBytes - Buffer.byteLength(unpadded);
+  if (padding < 0) throw new Error('Requested CSV size is smaller than its rows.');
+  const paddingPerRow = Math.floor(padding / rowCount);
+  const extraPadding = padding % rowCount;
+  return [header, ...rows.map((row, index) => row.replace(',,', `,${'x'.repeat(paddingPerRow + (index === 0 ? extraPadding : 0))},`))].join('\n');
+}
+
 test('imports, counts in shelf order, records variance and reaches export', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Count stock in one');
@@ -243,4 +259,26 @@ test('@claim:manual-barcode finds a sample item when camera scanning is unavaila
   await dialog.getByRole('textbox', { name: 'Barcode', exact: true }).fill('8905555555555');
   await dialog.getByRole('button', { name: 'Find item' }).click();
   await expect(page.locator('.location-stamp')).toContainText('Aisle 10 / Bay 04 / Shelf A');
+});
+
+test('@claim:import-capacity accepts a 10,000-row 2 MB CSV and rejects each limit beyond that boundary', async ({ page }) => {
+  const accepted = importCsv(10_000, 1_999_900);
+  expect(Buffer.byteLength(accepted)).toBe(1_999_900);
+
+  await page.goto('/demo/');
+  await page.getByRole('button', { name: 'Import a CSV in demo' }).click();
+  await expect(page.getByLabel('Demo controls')).toContainText('sample data, nothing is saved to your real stocktake');
+  await page.locator('#csv-file').setInputFiles({ name: '10k-under-2mb.csv', mimeType: 'text/csv', buffer: Buffer.from(accepted) });
+  await expect(page.locator('.progress-copy')).toContainText('0 / 10000', { timeout: 30_000 });
+  await expect(page.locator('#counted')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Reset demo' }).click();
+  await page.getByRole('button', { name: 'Import a CSV in demo' }).click();
+  await page.locator('#csv-file').setInputFiles({ name: '10001-rows.csv', mimeType: 'text/csv', buffer: Buffer.from(importCsv(10_001)) });
+  await expect(page.locator('#import-error')).toHaveText('This count supports up to 10,000 items per file.');
+
+  const tooLarge = importCsv(1, 2_000_001);
+  expect(Buffer.byteLength(tooLarge)).toBe(2_000_001);
+  await page.locator('#csv-file').setInputFiles({ name: 'over-2mb.csv', mimeType: 'text/csv', buffer: Buffer.from(tooLarge) });
+  await expect(page.locator('#import-error')).toHaveText('That file is over 2 MB. Split it into smaller shelf lists.');
 });

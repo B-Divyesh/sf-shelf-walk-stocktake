@@ -40,5 +40,12 @@
     "where": "README",
     "test": "npm run test:claim -- --grep @claim:manual-barcode",
     "sandbox": "fresh browser context at /demo/ with BarcodeDetector absent; enter a bundled barcode and assert its shelf path"
+  },
+  {
+    "id": "import-capacity",
+    "claim": "Imports CSV files with up to 10,000 item rows and 2 MB",
+    "where": "landing import help, README",
+    "test": "npm run test:claim -- --grep @claim:import-capacity",
+    "sandbox": "fresh browser context at /demo/; use the demo-only CSV import to accept a 10,000-row 1,999,900-byte CSV, then reject 10,001 rows and 2,000,001 bytes"
   }
 ]

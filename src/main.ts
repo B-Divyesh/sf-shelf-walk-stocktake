@@ -10,6 +10,7 @@ let mode: Mode = 'start';
 let activeId = '';
 let query = '';
 let reviewFilter: 'all' | 'variance' | 'uncounted' = 'all';
+let demoImport = false;
 let deferredInstall: Event | null = null;
 let cameraStream: MediaStream | null = null;
 let scannerReturnFocus: HTMLElement | null = null;
@@ -25,17 +26,20 @@ const addAudit = (action: string, detail: string, itemId?: string) => state.audi
 
 function shell(content: string): string {
   const online = navigator.onLine;
-  return `${demoMode ? `<aside class="demo-banner" aria-label="Demo controls"><span><b>Demo</b> — sample data, nothing is saved to your real stocktake.</span><span><button class="text-button" data-action="reset-demo">Reset demo</button><button class="text-button" data-action="start-real">Start for real</button></span></aside>` : ''}<header class="site-header">
+  const demoControls = demoImport
+    ? '<button class="text-button" data-action="return-demo">Return to sample</button>'
+    : '<button class="text-button" data-action="import-demo">Import a CSV in demo</button>';
+  return `${demoMode ? `<aside class="demo-banner" aria-label="Demo controls"><span><b>Demo</b> — sample data, nothing is saved to your real stocktake.</span><span>${demoControls}<button class="text-button" data-action="reset-demo">Reset demo</button><button class="text-button" data-action="start-real">Start for real</button></span></aside>` : ''}<header class="site-header">
     <a class="brand" href="/" data-action="home" aria-label="Shelf Walk Stocktake home"><span class="brand-mark" aria-hidden="true">//</span> Shelf Walk</a>
     <nav class="header-nav" aria-label="Site"><a href="/demo/">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav><div class="header-status"><span class="status-dot ${online ? '' : 'offline'}" aria-hidden="true"></span>${online ? 'Local save on' : 'Offline · local save on'}</div>
   </header>
-  ${state.items.length ? `<nav class="step-rail" aria-label="Stocktake steps">
+  ${state.items.length && !demoImport ? `<nav class="step-rail" aria-label="Stocktake steps">
     <button data-mode="walk" class="${mode === 'walk' ? 'active' : ''}"><b>01</b> Walk</button>
     <button data-mode="review" class="${mode === 'review' ? 'active' : ''}"><b>02</b> Review</button>
     <button data-mode="more" class="${mode === 'more' ? 'active' : ''}"><b>03</b> Finish</button>
   </nav>` : ''}
   <main id="main" tabindex="-1">${content}</main>
-  <footer class="site-footer"><span>Built for basements and back aisles.</span><a href="/demo/">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory · v1.0.1</span></footer>
+  <footer class="site-footer"><span>Local stock counts in this browser.</span><a href="/demo/">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory · v1.0.1</span></footer>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>`;
 }
 
@@ -53,7 +57,7 @@ function startView(): string {
     </div>
     <figure class="hero-art"><picture><source srcset="/assets/shelf-walk-hero.webp" type="image/webp"><img src="/assets/shelf-walk-hero.webp" width="1536" height="1024" fetchpriority="high" decoding="async" alt="Concrete stockroom aisle with steel shelves, green crates and a barcode scanner"></picture><figcaption>Full shelf paths stay visible on every count.</figcaption></figure>
   </section>
-  <section class="method" aria-labelledby="method-title"><p class="eyebrow">A controlled count pass</p><h2 id="method-title">Paper-simple. Audit-ready.</h2><ol><li><b>Import</b><span>Bring a plain CSV from any inventory system.</span></li><li><b>Count</b><span>Scan or search without losing shelf order.</span></li><li><b>Explain</b><span>Reason codes and photo notes stay attached.</span></li><li><b>Export</b><span>Only variances, plus a complete audit trail.</span></li></ol></section>`;
+  <section class="method" aria-labelledby="method-title"><p class="eyebrow">Count in four steps</p><h2 id="method-title">How the stocktake works</h2><ol><li><b>Import</b><span>Bring a plain CSV from any inventory system.</span></li><li><b>Count</b><span>Scan or search without losing shelf order.</span></li><li><b>Explain</b><span>Reason codes and photo notes stay attached.</span></li><li><b>Export</b><span>Only variances, plus a complete audit trail.</span></li></ol></section>`;
 }
 
 function walkView(): string {
@@ -96,14 +100,14 @@ function reviewView(): string {
 }
 
 function moreView(): string {
-  return `<section class="finish-page"><p class="eyebrow">Own the result</p><h1>Export &amp; hand off</h1><p class="lede">Files are created on this device. Spreadsheet-formula characters are neutralised on export.</p>
+  return `<section class="finish-page"><p class="eyebrow">Create your files</p><h1>Export &amp; hand off</h1><p class="lede">Files are created on this device. Spreadsheet-formula characters are neutralised on export.</p>
     <div class="export-grid"><div><span class="stamp">CSV</span><h2>Variance file</h2><p>Only counted items that differ from expected stock.</p><button class="button primary" data-action="export-variance">Export ${varianceTotal()} variances</button></div><div><span class="stamp">CSV</span><h2>Audit trail</h2><p>Timestamped import and count events, including full paths.</p><button class="button primary" data-action="export-audit">Export audit trail</button></div><div><span class="stamp">JSON</span><h2>Local backup</h2><p>A portable copy of this full stocktake, including photo notes.</p><button class="button secondary" data-action="backup">Backup data</button></div></div>
     <details class="danger-zone"><summary>Erase this stocktake</summary><p>Removes the current import, counts, notes and audit events from this device. Download a backup first if you may need them.</p><button class="button danger-button" data-action="erase">Erase current stocktake</button></details>
   </section>`;
 }
 
 function render(focusId?: string): void {
-  const content = state.items.length === 0 ? startView() : mode === 'review' ? reviewView() : mode === 'more' ? moreView() : walkView();
+  const content = state.items.length === 0 || demoImport ? startView() : mode === 'review' ? reviewView() : mode === 'more' ? moreView() : walkView();
   app.innerHTML = shell(content);
   if (focusId) requestAnimationFrame(() => document.getElementById(focusId)?.focus());
 }
@@ -125,7 +129,7 @@ function download(name: string, content: string, type: string): void {
 async function handleCsv(file: File): Promise<void> {
   try {
     const items = importItems(await file.text());
-    state = emptyState(); state.items = items; addAudit('import', `Imported ${items.length} items from ${file.name}`);
+    state = emptyState(); state.items = items; demoImport = false; addAudit('import', `Imported ${items.length} items from ${file.name}`);
     activeId = items[0].id; mode = 'walk'; await persist(); render('counted'); toast(`${items.length} items ready in shelf order.`);
   } catch (error) {
     const node = document.querySelector('#import-error'); if (node) node.textContent = error instanceof Error ? error.message : 'Could not read that CSV.';
@@ -183,7 +187,9 @@ app.addEventListener('click', async (event) => {
   if (el.dataset.filter) { reviewFilter=el.dataset.filter as typeof reviewFilter; render(); return; }
   const action=el.dataset.action;
   if(action==='home') { event.preventDefault(); mode=state.items.length?'walk':'start'; render(); }
-  if(action==='reset-demo'&&demoMode) { await clearActiveStorage(); state=emptyState(); state.items=sampleItems(); addAudit('demo-reset','Reset the bundled sample shelf count'); activeId=state.items[0].id; mode='walk'; await persist('Demo reset with six sample items.'); render('counted'); }
+  if(action==='import-demo'&&demoMode) { demoImport=true; render('csv-file'); }
+  if(action==='return-demo'&&demoMode) { demoImport=false; render('counted'); }
+  if(action==='reset-demo'&&demoMode) { await clearActiveStorage(); state=emptyState(); state.items=sampleItems(); demoImport=false; addAudit('demo-reset','Reset the bundled sample shelf count'); activeId=state.items[0].id; mode='walk'; await persist('Demo reset with six sample items.'); render('counted'); }
   if(action==='start-real'&&demoMode) { await clearActiveStorage(); location.assign('/'); return; }
   if(action==='template') download('shelf-walk-template.csv',toCsv([['sku','name','barcode','location','expected'],['SKU-001','Example item','8901234567890','Aisle 01 / Bay 02 / Shelf B',12]]),'text/csv');
   if(action==='minus'||action==='plus') { const input=document.querySelector<HTMLInputElement>('#counted')!; const value=Number(input.value)||0; input.value=String(Math.max(0,value+(action==='plus'?1:-1))); input.focus(); }
